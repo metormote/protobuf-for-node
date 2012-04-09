@@ -48,6 +48,7 @@ using std::string;
 using std::vector;
 using std::cerr;
 using std::endl;
+using std::stringstream;
 
 using v8::Array;
 using v8::AccessorInfo;
@@ -59,6 +60,7 @@ using v8::External;
 using v8::Function;
 using v8::FunctionTemplate;
 using v8::Integer;
+using v8::Uint32;
 using v8::Handle;
 using v8::HandleScope;
 using v8::InvocationCallback;
@@ -300,7 +302,17 @@ namespace protobuf_for_node {
           break;
         case FieldDescriptor::CPPTYPE_STRING: {
           // Shortcutting Utf8value(buffer.toString())
-          if (Buffer::HasInstance(value)) {
+          if(field->type() == FieldDescriptor::TYPE_BYTES && value->IsArray()) {
+            Handle<Array> array = value.As<Array>();
+            int length = array->Length();
+            stringstream ss;
+            for (int j = 0; j < length; j++) {
+              Local<Integer> n = array->Get(j).As<Integer>();
+              ss << (char)n->Value();
+            }
+            SET(String, ss.str());
+          }
+          else if (Buffer::HasInstance(value)) {
             Local<Object> buf = value->ToObject();
             SET(String, string(Buffer::Data(buf), Buffer::Length(buf)));
           } else {
